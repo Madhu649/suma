@@ -1,0 +1,391 @@
+[[GIT HUB]]
+--> web based git repository 
+
+<<no1>>
+import org.openqa.selenium.By;
+import org.openqa.selenium.WebDriver;
+import org.openqa.selenium.WebElement;
+import org.openqa.selenium.chrome.ChromeDriver;
+import org.openqa.selenium.chrome.ChromeOptions;
+import org.openqa.selenium.support.PageFactory;
+import org.openqa.selenium.support.ui.ExpectedConditions;
+import org.openqa.selenium.support.ui.WebDriverWait;
+import org.testng.Assert;
+import org.testng.annotations.AfterClass;
+import org.testng.annotations.BeforeClass;
+import org.testng.annotations.Test;
+ 
+import java.time.Duration;
+ 
+public class HotelBookingSystemTest {
+ 
+    private WebDriver driver;
+    private WebDriverWait wait;
+ 
+    // BasePage class
+    public class BasePage {
+        protected WebDriver driver;
+ 
+        public BasePage(WebDriver driver) {
+            this.driver = driver;
+            PageFactory.initElements(driver, this);
+        }
+    }
+ 
+    // LoginPage class
+    public class LoginPage extends BasePage {
+ 
+        // Locators
+        WebElement usernameField;
+        WebElement passwordField;
+        WebElement userLoginButton;
+        WebElement adminUsernameField;
+        WebElement adminPasswordField;
+        WebElement adminLoginButton;
+ 
+        // Constructor
+        public LoginPage(WebDriver driver) {
+            super(driver);
+        }
+ 
+        // User login method
+        public void userLogin(String username, String password) {
+            usernameField = driver.findElement(By.id("username"));
+            passwordField = driver.findElement(By.id("password"));
+            userLoginButton = driver.findElement(By.id("userLoginButton"));
+            usernameField.sendKeys(username);
+            passwordField.sendKeys(password);
+            userLoginButton.click();
+        }
+ 
+        // Admin login method
+        public void adminLogin(String username, String password) {
+            adminUsernameField = driver.findElement(By.id("adminUsername"));
+            adminPasswordField = driver.findElement(By.id("adminPassword"));
+            adminLoginButton = driver.findElement(By.id("adminLoginButton"));
+            adminUsernameField.sendKeys(username);
+            adminPasswordField.sendKeys(password);
+            adminLoginButton.click();
+        }
+    }
+ 
+    // UserDashboardPage class
+    public class UserDashboardPage extends BasePage {
+ 
+        // Locators
+        WebElement searchHotelField;
+        WebElement searchButton;
+        WebElement bookNowButton;
+        WebElement nameField;
+        WebElement emailField;
+        WebElement phoneField;
+        WebElement dateField;
+        WebElement daysField;
+        WebElement confirmBookingButton;
+        WebElement bookingMessage;
+ 
+        // Constructor
+        public UserDashboardPage(WebDriver driver) {
+            super(driver);
+        }
+ 
+        // Search for hotels method
+        public void searchHotels(String location) {
+            searchHotelField = driver.findElement(By.id("searchHotel"));
+            searchButton = driver.findElement(By.id("searchButton"));
+            searchHotelField.sendKeys(location);
+            searchButton.click();
+        }
+ 
+        // Book a hotel method
+        public void bookHotel(String name, String email, String phone, String date, String days) {
+            bookNowButton = driver.findElement(By.cssSelector("button[data-hotel-id='1']"));
+            bookNowButton.click();
+            nameField = driver.findElement(By.id("name"));
+            emailField = driver.findElement(By.id("email"));
+            phoneField = driver.findElement(By.id("phone"));
+            dateField = driver.findElement(By.id("date"));
+            daysField = driver.findElement(By.id("days"));
+            confirmBookingButton = driver.findElement(By.id("confirmBooking"));
+            nameField.sendKeys(name);
+            emailField.sendKeys(email);
+            phoneField.sendKeys(phone);
+            dateField.sendKeys(date);
+            daysField.sendKeys(days);
+            confirmBookingButton.click();
+        }
+ 
+        // Get booking success message method
+        public String getBookingMessage() {
+            bookingMessage = driver.findElement(By.id("bookingMessage"));
+            return bookingMessage.getText();
+        }
+    }
+ 
+    // AdminDashboardPage class
+    public class AdminDashboardPage extends BasePage {
+ 
+        // Locators
+        WebElement bookingTable;
+        WebElement cancelButton;
+        WebElement cancelMessage;
+ 
+        // Constructor
+        public AdminDashboardPage(WebDriver driver) {
+            super(driver);
+        }
+ 
+        // Cancel a booking method
+        public void cancelBooking() {
+            bookingTable = driver.findElement(By.id("bookingTable"));
+            cancelButton = bookingTable.findElement(By.cssSelector("button[data-cancel-id='1']"));
+            cancelButton.click();
+        }
+ 
+        // Get cancellation success message method
+        public String getCancelMessage() {
+            cancelMessage = driver.findElement(By.id("cancelMessage"));
+            return cancelMessage.getText();
+        }
+ 
+        // Verify booking cancellation
+        public boolean isBookingCancelled(WebDriverWait wait) {
+            return wait.until(ExpectedConditions.invisibilityOfElementLocated(By.cssSelector("button[data-cancel-id='1']")));
+        }
+ 
+        // Get total booking count
+        public int getBookingCount() {
+            bookingTable = driver.findElement(By.id("bookingTable"));
+            return bookingTable.findElements(By.tagName("tr")).size();
+        }
+    }
+ 
+    @BeforeClass
+    public void setUp() {
+        ChromeOptions options = new ChromeOptions();
+        driver = new ChromeDriver(options);
+        wait = new WebDriverWait(driver, Duration.ofSeconds(10));
+        driver.manage().window().maximize();
+    }
+ 
+    @Test
+    public void testUserBookingFlow() {
+        driver.get("https://nisha1130.github.io/f1/");
+ 
+        LoginPage loginPage = new LoginPage(driver);
+        loginPage.userLogin("user", "password");
+ 
+        wait.until(ExpectedConditions.visibilityOfElementLocated(By.id("userDashboard")));
+ 
+        UserDashboardPage userDashboardPage = new UserDashboardPage(driver);
+        userDashboardPage.searchHotels("Madurai");
+ 
+        wait.until(ExpectedConditions.visibilityOfElementLocated(By.cssSelector("button[data-hotel-id='1']")));
+        userDashboardPage.bookHotel("John Doe", "john.doe@example.com", "1234567890", "2023-05-01", "3");
+ 
+        Assert.assertEquals(userDashboardPage.getBookingMessage(), "Booking Successful!");
+    }
+ 
+    @Test(dependsOnMethods = "testUserBookingFlow")
+    public void testAdminCancelBookingFlow() {
+        driver.get("https://nisha1130.github.io/f1/");
+ 
+        LoginPage loginPage = new LoginPage(driver);
+        loginPage.adminLogin("admin", "password");
+ 
+        wait.until(ExpectedConditions.visibilityOfElementLocated(By.id("adminDashboard")));
+ 
+        AdminDashboardPage adminDashboardPage = new AdminDashboardPage(driver);
+        int initialBookingCount = adminDashboardPage.getBookingCount();
+        adminDashboardPage.cancelBooking();
+ 
+        Assert.assertEquals(adminDashboardPage.getCancelMessage(), "Booking Cancelled Successfully!");
+        Assert.assertTrue(adminDashboardPage.isBookingCancelled(wait));
+ 
+        int finalBookingCount = adminDashboardPage.getBookingCount();
+        Assert.assertEquals(finalBookingCount, initialBookingCount - 1);
+    }
+ 
+    @AfterClass
+    public void tearDown() {
+        if (driver != null) {
+            driver.quit();
+        }
+    }
+}
+ 
+<<< index>>>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hotel Booking System</title>
+    <style>
+        /* styles.css */
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f0f0f0;
+            margin: 0;
+            padding: 20px;
+            text-align: center;
+        }
+ 
+        h1, h2 {
+            color: #333;
+        }
+ 
+        .login-container {
+            display: inline-block;
+            margin: 20px;
+        }
+ 
+        input, button {
+            margin: 10px;
+            padding: 10px;
+            font-size: 16px;
+        }
+ 
+        button {
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            cursor: pointer;
+        }
+ 
+        button:hover {
+            background-color: #45a049;
+        }
+ 
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+        }
+ 
+        th, td {
+            padding: 10px;
+            border: 1px solid #ddd;
+            text-align: left;
+        }
+ 
+        th {
+            background-color: #4CAF50;
+            color: white;
+        }
+    </style>
+</head>
+<body>
+    <!-- Home Page -->
+    <div id="home">
+        <h1>Hotel Booking System</h1>
+        <div class="login-container">
+            <h2>User Login</h2>
+            <form id="userLoginForm">
+                <input type="text" id="username" placeholder="Username">
+                <input type="password" id="password" placeholder="Password">
+                <button type="button" id="userLoginButton">Login</button>
+            </form>
+        </div>
+        <div class="login-container">
+            <h2>Admin Login</h2>
+            <form id="adminLoginForm">
+                <input type="text" id="adminUsername" placeholder="Username">
+                <input type="password" id="adminPassword" placeholder="Password">
+                <button type="button" id="adminLoginButton">Login</button>
+            </form>
+        </div>
+    </div>
+ 
+    <!-- User Dashboard -->
+    <div id="userDashboard" style="display:none;">
+        <h2>Search Hotels</h2>
+        <input type="text" id="searchHotel" placeholder="Enter location">
+        <button type="button" id="searchButton">Search</button>
+        <div id="hotelList"></div>
+        <div id="bookingForm" style="display:none;">
+            <input type="text" id="name" placeholder="Name">
+            <input type="email" id="email" placeholder="Email">
+            <input type="tel" id="phone" placeholder="Phone">
+            <input type="date" id="date">
+            <input type="number" id="days" placeholder="Number of Days">
+            <button type="button" id="confirmBooking">Confirm Booking</button>
+        </div>
+        <div id="bookingMessage"></div>
+    </div>
+ 
+    <!-- Admin Dashboard -->
+    <div id="adminDashboard" style="display:none;">
+        <h2>All Bookings</h2>
+        <table id="bookingTable">
+            <thead>
+                <tr>
+                    <th>User Name</th>
+                    <th>Hotel Name</th>
+                    <th>Booking Date</th>
+                    <th>Number of Days</th>
+                    <th>Status</th>
+                    <th>Action</th>
+                </tr>
+            </thead>
+            <tbody>
+                <!-- Booking rows will be populated here -->
+            </tbody>
+        </table>
+        <div id="cancelMessage"></div>
+    </div>
+ 
+    <script>
+        // User login
+        document.getElementById('userLoginButton').addEventListener('click', function() {
+            document.getElementById('home').style.display = 'none';
+            document.getElementById('userDashboard').style.display = 'block';
+        });
+ 
+        // Admin login
+        document.getElementById('adminLoginButton').addEventListener('click', function() {
+            document.getElementById('home').style.display = 'none';
+            document.getElementById('adminDashboard').style.display = 'block';
+        });
+ 
+        // Search hotels
+        document.getElementById('searchButton').addEventListener('click', function() {
+            const hotelList = document.getElementById('hotelList');
+            hotelList.innerHTML = `
+                <div>
+                    <h3>Hotel Madurai</h3>
+                    <p>Location: Madurai</p>
+                    <p>Price per night: ₹2000</p>
+                    <button type="button" data-hotel-id="1">Book Now</button>
+                </div>
+            `;
+            hotelList.querySelector('button').addEventListener('click', function() {
+                document.getElementById('bookingForm').style.display = 'block';
+            });
+        });
+ 
+        // Confirm booking
+        document.getElementById('confirmBooking').addEventListener('click', function() {
+            document.getElementById('bookingMessage').innerText = 'Booking Successful!';
+        });
+ 
+        // Populate bookings for admin (sample data for demonstration)
+        const bookingTableBody = document.querySelector('#bookingTable tbody');
+        bookingTableBody.innerHTML = `
+            <tr>
+                <td>John Doe</td>
+                <td>Hotel Madurai</td>
+                <td>2023-05-01</td>
+                <td>3</td>
+                <td>Confirmed</td>
+                <td><button type="button" data-cancel-id="1">Cancel</button></td>
+            </tr>
+        `;
+ 
+        // Cancel booking
+        bookingTableBody.querySelector('[data-cancel-id]').addEventListener('click', function() {
+            document.getElementById('cancelMessage').innerText = 'Booking Cancelled Successfully!';
+        });
+    </script>
+</body>
+</html>
