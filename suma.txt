@@ -389,3 +389,14 @@ public class HotelBookingSystemTest {
     </script>
 </body>
 </html>
+
+
+
+
+
+
+
+
+
+
+driver.get("file:///" + System.getProperty("user.dir") + "/src/main/resources/products.html");
